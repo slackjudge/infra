@@ -1,0 +1,42 @@
+# =============================================================================
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and fill in the actual values
+# IMPORTANT: Never commit terraform.tfvars to git!
+# =============================================================================
+
+# AWS Configuration
+aws_region   = "ap-northeast-2"
+project_name = "bj-ranking"
+
+# Cloudflare
+cloudflare_api_token  = "your-cloudflare-api-token"
+cloudflare_zone_id    = "your-cloudflare-zone-id"
+cloudflare_account_id = "your-cloudflare-account-id"
+domain_name           = "example.com"
+
+# PostgreSQL (Supabase)
+postgres_host     = "xxx.supabase.co"
+postgres_port     = "5432"
+postgres_database = "bj_ranking"
+postgres_user     = "postgres"
+postgres_password = "your-postgres-password"
+
+# MongoDB
+mongo_uri      = "mongodb+srv://username:password@cluster.mongodb.net"
+mongo_database = "mini2"
+mongo_password = "your-mongo-password"
+
+# Redis (Redis Cloud)
+redis_endpoint = "xxx.redis.cloud:12345"
+redis_username = "default"
+redis_password = "your-redis-password"
+
+# Optional: Override defaults
+# vpc_cidr                  = "10.0.0.0/16"
+# app_port                  = 8080
+# health_check_path         = "/health"
+# ecr_image_retention_count = 10
+# api_min_count             = 1
+# api_max_count             = 3
+# cpu_target_value          = 70
+# requests_per_target       = 1000
