@@ -36,18 +36,49 @@ async function handleRequest(request) {
     return Response.redirect(redirectUrl, 301);
   }
 
+  // Handle CORS preflight
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Max-Age': '86400'
+      }
+    });
+  }
+
   // /api/* requests go to Backend (ALB)
   if (url.pathname.startsWith('/api')) {
     const backendUrl = '${var.backend_url}' + url.pathname + url.search;
-    const response = await fetch(backendUrl, {
-      method: request.method,
-      headers: request.headers,
-      body: request.body
-    });
 
-    // Disable cache for API responses
+    // Build new headers (exclude Host to let fetch set it correctly)
+    const newHeaders = new Headers();
+    for (const [key, value] of request.headers) {
+      if (key.toLowerCase() !== 'host') {
+        newHeaders.set(key, value);
+      }
+    }
+
+    // Build fetch options (no body for GET/HEAD)
+    const fetchOptions = {
+      method: request.method,
+      headers: newHeaders
+    };
+
+    if (!['GET', 'HEAD'].includes(request.method)) {
+      fetchOptions.body = request.body;
+    }
+
+    const response = await fetch(backendUrl, fetchOptions);
+
+    // Add CORS and cache headers
     const newResponse = new Response(response.body, response);
     newResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    newResponse.headers.set('Access-Control-Allow-Origin', '*');
+    newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     return newResponse;
   }
 
