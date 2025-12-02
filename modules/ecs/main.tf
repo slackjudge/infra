@@ -136,6 +136,9 @@ resource "aws_ecs_service" "api" {
   desired_count   = var.api_min_count
   launch_type     = "FARGATE"
 
+  # Wait 120 seconds before starting health checks (Spring Boot startup ~90s)
+  health_check_grace_period_seconds = 120
+
   network_configuration {
     subnets          = var.subnet_ids
     security_groups  = [var.ecs_security_group_id]
