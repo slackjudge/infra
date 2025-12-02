@@ -18,13 +18,16 @@ resource "cloudflare_dns_record" "www" {
   ttl     = 1
 }
 
-# Cloudflare Worker Script
+# Cloudflare Worker Script (Service Worker format)
 resource "cloudflare_workers_script" "router" {
   account_id  = var.cloudflare_account_id
   script_name = "${var.project_name}-router"
   content     = <<-EOF
-    export default {
-      async fetch(request) {
+addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request));
+});
+
+async function handleRequest(request) {
         const url = new URL(request.url);
 
         // /api/* requests go to Backend (ALB)
@@ -45,7 +48,7 @@ resource "cloudflare_workers_script" "router" {
         // Other requests go to Frontend (S3)
         let path = url.pathname;
         if (path === '/' || !path.includes('.')) {
-          path = '/index.html'; // SPA routing support
+    path = '/index.html';
         }
 
         const frontendUrl = '${var.frontend_url}' + path;
@@ -60,7 +63,6 @@ resource "cloudflare_workers_script" "router" {
         const newResponse = new Response(response.body, response);
         newResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
         return newResponse;
-      }
     }
   EOF
 }
