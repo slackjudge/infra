@@ -1,26 +1,28 @@
 # DNS Record - Root domain (for Worker Route)
-resource "cloudflare_record" "root" {
+resource "cloudflare_dns_record" "root" {
   zone_id = var.cloudflare_zone_id
   name    = "@"
-  value   = "192.0.2.1" # Dummy IP (Worker handles routing)
+  content = "192.0.2.1" # Dummy IP (Worker handles routing)
   type    = "A"
   proxied = true
+  ttl     = 1
 }
 
 # DNS Record - www subdomain
-resource "cloudflare_record" "www" {
+resource "cloudflare_dns_record" "www" {
   zone_id = var.cloudflare_zone_id
   name    = "www"
-  value   = var.domain_name
+  content = var.domain_name
   type    = "CNAME"
   proxied = true
+  ttl     = 1
 }
 
 # Cloudflare Worker Script
-resource "cloudflare_worker_script" "router" {
-  account_id = var.cloudflare_account_id
-  name       = "${var.project_name}-router"
-  content    = <<-EOF
+resource "cloudflare_workers_script" "router" {
+  account_id  = var.cloudflare_account_id
+  script_name = "${var.project_name}-router"
+  content     = <<-EOF
     export default {
       async fetch(request) {
         const url = new URL(request.url);
@@ -64,39 +66,56 @@ resource "cloudflare_worker_script" "router" {
 }
 
 # Worker Route - Connect Worker to domain
-resource "cloudflare_worker_route" "main" {
+resource "cloudflare_workers_route" "main" {
+  zone_id = var.cloudflare_zone_id
+  pattern = "${var.domain_name}/*"
+  script  = cloudflare_workers_script.router.script_name
+}
+
+resource "cloudflare_workers_route" "www" {
+  zone_id = var.cloudflare_zone_id
+  pattern = "www.${var.domain_name}/*"
+  script  = cloudflare_workers_script.router.script_name
+}
+
+# Redirect Rules - Using cloudflare_ruleset (replaces deprecated page_rule)
+resource "cloudflare_ruleset" "redirects" {
   zone_id     = var.cloudflare_zone_id
-  pattern     = "${var.domain_name}/*"
-  script_name = cloudflare_worker_script.router.name
-}
+  name        = "${var.project_name}-redirects"
+  description = "Redirect rules for ${var.domain_name}"
+  kind        = "zone"
+  phase       = "http_request_dynamic_redirect"
 
-resource "cloudflare_worker_route" "www" {
-  zone_id     = var.cloudflare_zone_id
-  pattern     = "www.${var.domain_name}/*"
-  script_name = cloudflare_worker_script.router.name
-}
-
-# Page Rule - HTTP to HTTPS redirect
-resource "cloudflare_page_rule" "https_redirect" {
-  zone_id  = var.cloudflare_zone_id
-  target   = "http://*${var.domain_name}/*"
-  priority = 1
-
-  actions {
-    always_use_https = true
-  }
-}
-
-# Page Rule - www to non-www redirect
-resource "cloudflare_page_rule" "www_redirect" {
-  zone_id  = var.cloudflare_zone_id
-  target   = "www.${var.domain_name}/*"
-  priority = 2
-
-  actions {
-    forwarding_url {
-      url         = "https://${var.domain_name}/$1"
-      status_code = 301
+  rules = [
+    {
+      ref         = "www_to_root"
+      description = "Redirect www to root domain"
+      expression  = "(http.host eq \"www.${var.domain_name}\")"
+      action      = "redirect"
+      action_parameters = {
+        from_value = {
+          status_code = 301
+          target_url = {
+            expression = "concat(\"https://${var.domain_name}\", http.request.uri.path)"
+          }
+          preserve_query_string = true
+        }
+      }
+      enabled = true
     }
-  }
+  ]
+}
+
+# Zone Settings - Force HTTPS
+resource "cloudflare_zone_setting" "always_use_https" {
+  zone_id    = var.cloudflare_zone_id
+  setting_id = "always_use_https"
+  value      = "on"
+}
+
+# Zone Settings - SSL Mode
+resource "cloudflare_zone_setting" "ssl" {
+  zone_id    = var.cloudflare_zone_id
+  setting_id = "ssl"
+  value      = "flexible"
 }

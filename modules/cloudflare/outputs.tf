@@ -5,5 +5,5 @@ output "site_url" {
 
 output "worker_name" {
   description = "Cloudflare Worker name"
-  value       = cloudflare_worker_script.router.name
+  value       = cloudflare_workers_script.router.script_name
 }
