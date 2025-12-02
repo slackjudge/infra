@@ -28,42 +28,48 @@ addEventListener('fetch', event => {
 });
 
 async function handleRequest(request) {
-        const url = new URL(request.url);
+  const url = new URL(request.url);
 
-        // /api/* requests go to Backend (ALB)
-        if (url.pathname.startsWith('/api')) {
-          const backendUrl = '${var.backend_url}' + url.pathname + url.search;
-          const response = await fetch(backendUrl, {
-            method: request.method,
-            headers: request.headers,
-            body: request.body
-          });
+  // www to non-www redirect
+  if (url.hostname.startsWith('www.')) {
+    const redirectUrl = 'https://${var.domain_name}' + url.pathname + url.search;
+    return Response.redirect(redirectUrl, 301);
+  }
 
-          // Disable cache for API responses
-          const newResponse = new Response(response.body, response);
-          newResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-          return newResponse;
-        }
+  // /api/* requests go to Backend (ALB)
+  if (url.pathname.startsWith('/api')) {
+    const backendUrl = '${var.backend_url}' + url.pathname + url.search;
+    const response = await fetch(backendUrl, {
+      method: request.method,
+      headers: request.headers,
+      body: request.body
+    });
 
-        // Other requests go to Frontend (S3)
-        let path = url.pathname;
-        if (path === '/' || !path.includes('.')) {
+    // Disable cache for API responses
+    const newResponse = new Response(response.body, response);
+    newResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return newResponse;
+  }
+
+  // Other requests go to Frontend (S3)
+  let path = url.pathname;
+  if (path === '/' || !path.includes('.')) {
     path = '/index.html';
-        }
+  }
 
-        const frontendUrl = '${var.frontend_url}' + path;
-        let response = await fetch(frontendUrl);
+  const frontendUrl = '${var.frontend_url}' + path;
+  let response = await fetch(frontendUrl);
 
-        // Return index.html for 404 (SPA routing)
-        if (response.status === 404) {
-          response = await fetch('${var.frontend_url}/index.html');
-        }
+  // Return index.html for 404 (SPA routing)
+  if (response.status === 404) {
+    response = await fetch('${var.frontend_url}/index.html');
+  }
 
-        // Disable cache
-        const newResponse = new Response(response.body, response);
-        newResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-        return newResponse;
-    }
+  // Disable cache
+  const newResponse = new Response(response.body, response);
+  newResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  return newResponse;
+}
   EOF
 }
 
@@ -78,34 +84,6 @@ resource "cloudflare_workers_route" "www" {
   zone_id = var.cloudflare_zone_id
   pattern = "www.${var.domain_name}/*"
   script  = cloudflare_workers_script.router.script_name
-}
-
-# Redirect Rules - Using cloudflare_ruleset (replaces deprecated page_rule)
-resource "cloudflare_ruleset" "redirects" {
-  zone_id     = var.cloudflare_zone_id
-  name        = "${var.project_name}-redirects"
-  description = "Redirect rules for ${var.domain_name}"
-  kind        = "zone"
-  phase       = "http_request_dynamic_redirect"
-
-  rules = [
-    {
-      ref         = "www_to_root"
-      description = "Redirect www to root domain"
-      expression  = "(http.host eq \"www.${var.domain_name}\")"
-      action      = "redirect"
-      action_parameters = {
-        from_value = {
-          status_code = 301
-          target_url = {
-            expression = "concat(\"https://${var.domain_name}\", http.request.uri.path)"
-          }
-          preserve_query_string = true
-        }
-      }
-      enabled = true
-    }
-  ]
 }
 
 # Zone Settings - Force HTTPS
