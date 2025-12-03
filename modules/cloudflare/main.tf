@@ -51,55 +51,81 @@ async function handleRequest(request) {
 
   // /api/* requests go to Backend (ALB)
   if (url.pathname.startsWith('/api')) {
-    const backendUrl = '${var.backend_url}' + url.pathname + url.search;
+    try {
+      const backendUrl = '${var.backend_url}' + url.pathname + url.search;
 
-    // Build new headers (exclude Host to let fetch set it correctly)
-    const newHeaders = new Headers();
-    for (const [key, value] of request.headers) {
-      if (key.toLowerCase() !== 'host') {
-        newHeaders.set(key, value);
+      // Build fetch options (no body for GET/HEAD)
+      const fetchOptions = {
+        method: request.method,
+        headers: {
+          'Content-Type': request.headers.get('Content-Type') || 'application/json',
+          'Accept': request.headers.get('Accept') || 'application/json'
+        }
+      };
+
+      // Add Authorization header if present
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader) {
+        fetchOptions.headers['Authorization'] = authHeader;
       }
+
+      if (!['GET', 'HEAD'].includes(request.method)) {
+        fetchOptions.body = request.body;
+      }
+
+      const response = await fetch(backendUrl, fetchOptions);
+
+      // Create new response with mutable headers
+      const responseHeaders = new Headers();
+      responseHeaders.set('Content-Type', response.headers.get('Content-Type') || 'application/json');
+      responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+      responseHeaders.set('Access-Control-Allow-Origin', '*');
+      responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Backend unavailable', details: error.message }), {
+        status: 502,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     }
-
-    // Build fetch options (no body for GET/HEAD)
-    const fetchOptions = {
-      method: request.method,
-      headers: newHeaders
-    };
-
-    if (!['GET', 'HEAD'].includes(request.method)) {
-      fetchOptions.body = request.body;
-    }
-
-    const response = await fetch(backendUrl, fetchOptions);
-
-    // Add CORS and cache headers
-    const newResponse = new Response(response.body, response);
-    newResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-    newResponse.headers.set('Access-Control-Allow-Origin', '*');
-    newResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    newResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    return newResponse;
   }
 
   // Other requests go to Frontend (S3)
-  let path = url.pathname;
-  if (path === '/' || !path.includes('.')) {
-    path = '/index.html';
+  try {
+    let path = url.pathname;
+    if (path === '/' || !path.includes('.')) {
+      path = '/index.html';
+    }
+
+    const frontendUrl = '${var.frontend_url}' + path;
+    let response = await fetch(frontendUrl);
+
+    // Return index.html for 404 (SPA routing)
+    if (response.status === 404) {
+      response = await fetch('${var.frontend_url}/index.html');
+    }
+
+    // Create new response with cache control
+    const responseHeaders = new Headers(response.headers);
+    responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: responseHeaders
+    });
+  } catch (error) {
+    return new Response('Frontend unavailable', { status: 502 });
   }
-
-  const frontendUrl = '${var.frontend_url}' + path;
-  let response = await fetch(frontendUrl);
-
-  // Return index.html for 404 (SPA routing)
-  if (response.status === 404) {
-    response = await fetch('${var.frontend_url}/index.html');
-  }
-
-  // Disable cache
-  const newResponse = new Response(response.body, response);
-  newResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-  return newResponse;
 }
   EOF
 }
