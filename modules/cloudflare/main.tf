@@ -52,7 +52,9 @@ async function handleRequest(request) {
   // /api/* requests go to Backend (ALB)
   if (url.pathname.startsWith('/api')) {
     try {
-      const backendUrl = '${var.backend_url}' + url.pathname + url.search;
+      // Remove /api prefix before forwarding to ALB
+      const backendPath = url.pathname.replace(/^\/api/, '') || '/';
+      const backendUrl = '${var.backend_url}' + backendPath + url.search;
 
       // Build fetch options (no body for GET/HEAD)
       const fetchOptions = {
