@@ -105,7 +105,7 @@ module "cloudflare" {
   cloudflare_account_id = var.cloudflare_account_id
   domain_name           = var.domain_name
   frontend_url          = module.s3_frontend.website_url
-  backend_url           = "http://${module.alb.alb_dns_name}"
+  backend_dns_name      = module.alb.alb_dns_name
 }
 
 # =============================================================================
