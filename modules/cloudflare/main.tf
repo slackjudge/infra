@@ -18,7 +18,17 @@ resource "cloudflare_dns_record" "www" {
   ttl     = 1
 }
 
-# Cloudflare Worker Script (Service Worker format)
+# DNS Record - API subdomain (direct to ALB)
+resource "cloudflare_dns_record" "api" {
+  zone_id = var.cloudflare_zone_id
+  name    = "api"
+  content = var.backend_dns_name
+  type    = "CNAME"
+  proxied = true
+  ttl     = 1
+}
+
+# Cloudflare Worker Script - SPA routing only
 resource "cloudflare_workers_script" "router" {
   account_id  = var.cloudflare_account_id
   script_name = "${var.project_name}-router"
@@ -30,119 +40,43 @@ addEventListener('fetch', event => {
 async function handleRequest(request) {
   const url = new URL(request.url);
 
-  // www to non-www redirect
-  if (url.hostname.startsWith('www.')) {
-    const redirectUrl = 'https://${var.domain_name}' + url.pathname + url.search;
-    return Response.redirect(redirectUrl, 301);
+  // Determine path: serve index.html for non-file routes (SPA routing)
+  let path = url.pathname;
+  if (path === '/' || !path.includes('.')) {
+    path = '/index.html';
   }
 
-  // Handle CORS preflight
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Max-Age': '86400'
-      }
-    });
+  const frontendUrl = '${var.frontend_url}' + path;
+  let response = await fetch(frontendUrl);
+
+  // SPA routing: return index.html for 404 (with 200 OK)
+  if (response.status === 404) {
+    response = await fetch('${var.frontend_url}/index.html');
   }
 
-  // /api/* requests go to Backend (ALB)
-  if (url.pathname.startsWith('/api')) {
-    try {
-      // Remove /api prefix before forwarding to ALB
-      const backendPath = url.pathname.replace(/^\/api/, '') || '/';
-      const backendUrl = '${var.backend_url}' + backendPath + url.search;
-
-      // Build fetch options (no body for GET/HEAD)
-      const fetchOptions = {
-        method: request.method,
-        headers: {
-          'Content-Type': request.headers.get('Content-Type') || 'application/json',
-          'Accept': request.headers.get('Accept') || 'application/json'
-        }
-      };
-
-      // Add Authorization header if present
-      const authHeader = request.headers.get('Authorization');
-      if (authHeader) {
-        fetchOptions.headers['Authorization'] = authHeader;
-      }
-
-      if (!['GET', 'HEAD'].includes(request.method)) {
-        fetchOptions.body = request.body;
-      }
-
-      const response = await fetch(backendUrl, fetchOptions);
-
-      // Create new response with mutable headers
-      const responseHeaders = new Headers();
-      responseHeaders.set('Content-Type', response.headers.get('Content-Type') || 'application/json');
-      responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-      responseHeaders.set('Access-Control-Allow-Origin', '*');
-      responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: responseHeaders
-      });
-    } catch (error) {
-      return new Response(JSON.stringify({ error: 'Backend unavailable', details: error.message }), {
-        status: 502,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        }
-      });
-    }
-  }
-
-  // Other requests go to Frontend (S3)
-  try {
-    let path = url.pathname;
-    if (path === '/' || !path.includes('.')) {
-      path = '/index.html';
-    }
-
-    const frontendUrl = '${var.frontend_url}' + path;
-    let response = await fetch(frontendUrl);
-
-    // Return index.html for 404 (SPA routing)
-    if (response.status === 404) {
-      response = await fetch('${var.frontend_url}/index.html');
-    }
-
-    // Create new response with cache control
-    const responseHeaders = new Headers(response.headers);
-    responseHeaders.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: responseHeaders
-    });
-  } catch (error) {
-    return new Response('Frontend unavailable', { status: 502 });
-  }
+  return response;
 }
   EOF
 }
 
-# Worker Route - Connect Worker to domain
+# Worker Route - Connect Worker to root domain only
 resource "cloudflare_workers_route" "main" {
   zone_id = var.cloudflare_zone_id
   pattern = "${var.domain_name}/*"
   script  = cloudflare_workers_script.router.script_name
 }
 
-resource "cloudflare_workers_route" "www" {
-  zone_id = var.cloudflare_zone_id
-  pattern = "www.${var.domain_name}/*"
-  script  = cloudflare_workers_script.router.script_name
+# Page Rule - www to non-www redirect (301)
+resource "cloudflare_page_rule" "www_redirect" {
+  zone_id  = var.cloudflare_zone_id
+  target   = "www.${var.domain_name}/*"
+  priority = 1
+  actions {
+    forwarding_url {
+      url         = "https://${var.domain_name}/$1"
+      status_code = 301
+    }
+  }
 }
 
 # Zone Settings - Force HTTPS

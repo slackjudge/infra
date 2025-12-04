@@ -23,7 +23,7 @@ variable "frontend_url" {
   type        = string
 }
 
-variable "backend_url" {
-  description = "ALB DNS URL (http://...)"
+variable "backend_dns_name" {
+  description = "Backend ALB DNS name for API subdomain CNAME record"
   type        = string
 }
