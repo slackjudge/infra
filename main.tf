@@ -89,6 +89,7 @@ module "ecs" {
   redis_endpoint_ssm_arn    = aws_ssm_parameter.redis_endpoint.arn
   redis_username_ssm_arn    = aws_ssm_parameter.redis_username.arn
   redis_password_ssm_arn    = aws_ssm_parameter.redis_password.arn
+  frontend_url_ssm_arn      = aws_ssm_parameter.frontend_url.arn
 
   # Auto Scaling
   api_min_count       = var.api_min_count
@@ -179,4 +180,11 @@ resource "aws_ssm_parameter" "redis_password" {
   name  = "/bj-ranking/prod/REDIS_PASSWORD"
   type  = "SecureString"
   value = var.redis_password
+}
+
+# Frontend URL (CORS)
+resource "aws_ssm_parameter" "frontend_url" {
+  name  = "/bj-ranking/prod/FRONTEND_URL"
+  type  = "String"
+  value = "https://${var.domain_name}"
 }

@@ -115,6 +115,12 @@ variable "redis_password_ssm_arn" {
   type        = string
 }
 
+# SSM Parameter ARNs - Frontend
+variable "frontend_url_ssm_arn" {
+  description = "SSM parameter ARN for FRONTEND_URL"
+  type        = string
+}
+
 # Auto Scaling
 variable "api_min_count" {
   description = "Minimum number of API tasks"

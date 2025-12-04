@@ -52,7 +52,9 @@ resource "aws_ecs_task_definition" "api" {
       # Redis
       { name = "REDIS_ENDPOINT", valueFrom = var.redis_endpoint_ssm_arn },
       { name = "REDIS_USERNAME", valueFrom = var.redis_username_ssm_arn },
-      { name = "REDIS_PASSWORD", valueFrom = var.redis_password_ssm_arn }
+      { name = "REDIS_PASSWORD", valueFrom = var.redis_password_ssm_arn },
+      # Frontend URL (CORS)
+      { name = "FRONTEND_URL", valueFrom = var.frontend_url_ssm_arn }
     ]
 
     environment = [
