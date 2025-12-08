@@ -57,6 +57,13 @@ variable "worker_image" {
   type        = string
 }
 
+# Spring Profile
+variable "spring_profile" {
+  description = "Spring Boot active profile (dev, prod)"
+  type        = string
+  default     = "prod"
+}
+
 # SSM Parameter ARNs - PostgreSQL
 variable "postgres_host_ssm_arn" {
   description = "SSM parameter ARN for POSTGRES_HOST"

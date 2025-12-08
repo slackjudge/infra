@@ -37,6 +37,12 @@ variable "health_check_path" {
   default     = "/health"
 }
 
+variable "spring_profile" {
+  description = "Spring Boot active profile (dev, prod)"
+  type        = string
+  default     = "dev"
+}
+
 # =============================================================================
 # ECR
 # =============================================================================

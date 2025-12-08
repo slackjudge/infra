@@ -58,7 +58,7 @@ resource "aws_ecs_task_definition" "api" {
     ]
 
     environment = [
-      { name = "SPRING_PROFILES_ACTIVE", value = "prod" }
+      { name = "SPRING_PROFILES_ACTIVE", value = var.spring_profile }
     ]
 
     logConfiguration = {
@@ -110,7 +110,7 @@ resource "aws_ecs_task_definition" "worker" {
     ]
 
     environment = [
-      { name = "SPRING_PROFILES_ACTIVE", value = "prod" }
+      { name = "SPRING_PROFILES_ACTIVE", value = var.spring_profile }
     ]
 
     logConfiguration = {
@@ -140,6 +140,16 @@ resource "aws_ecs_service" "api" {
 
   # Wait 120 seconds before starting health checks (Spring Boot startup ~90s)
   health_check_grace_period_seconds = 120
+
+  # Deployment configuration
+  deployment_minimum_healthy_percent = 0
+  deployment_maximum_percent         = 200
+
+  # Circuit breaker: auto rollback on deployment failure
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   network_configuration {
     subnets          = var.subnet_ids
