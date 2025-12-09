@@ -128,6 +128,38 @@ variable "frontend_url_ssm_arn" {
   type        = string
 }
 
+# SSM Parameter ARNs - JWT
+variable "jwt_access_secret_ssm_arn" {
+  description = "SSM parameter ARN for DEV_ACCESS_SECRET"
+  type        = string
+}
+
+variable "jwt_refresh_secret_ssm_arn" {
+  description = "SSM parameter ARN for DEV_REFRESH_SECRET"
+  type        = string
+}
+
+# SSM Parameter ARNs - Slack
+variable "slack_client_id_ssm_arn" {
+  description = "SSM parameter ARN for SLACK_CLIENT_ID"
+  type        = string
+}
+
+variable "slack_client_secret_ssm_arn" {
+  description = "SSM parameter ARN for SLACK_CLIENT_SECRET"
+  type        = string
+}
+
+variable "slack_redirect_uri_ssm_arn" {
+  description = "SSM parameter ARN for SLACK_REDIRECT_URI"
+  type        = string
+}
+
+variable "slack_bot_token_ssm_arn" {
+  description = "SSM parameter ARN for SLACK_BOT_TOKEN"
+  type        = string
+}
+
 # Auto Scaling
 variable "api_min_count" {
   description = "Minimum number of API tasks"

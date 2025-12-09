@@ -54,7 +54,15 @@ resource "aws_ecs_task_definition" "api" {
       { name = "REDIS_USERNAME", valueFrom = var.redis_username_ssm_arn },
       { name = "REDIS_PASSWORD", valueFrom = var.redis_password_ssm_arn },
       # Frontend URL (CORS)
-      { name = "FRONTEND_URL", valueFrom = var.frontend_url_ssm_arn }
+      { name = "FRONTEND_URL", valueFrom = var.frontend_url_ssm_arn },
+      # JWT
+      { name = "DEV_ACCESS_SECRET", valueFrom = var.jwt_access_secret_ssm_arn },
+      { name = "DEV_REFRESH_SECRET", valueFrom = var.jwt_refresh_secret_ssm_arn },
+      # Slack
+      { name = "SLACK_CLIENT_ID", valueFrom = var.slack_client_id_ssm_arn },
+      { name = "SLACK_CLIENT_SECRET", valueFrom = var.slack_client_secret_ssm_arn },
+      { name = "SLACK_REDIRECT_URI", valueFrom = var.slack_redirect_uri_ssm_arn },
+      { name = "SLACK_BOT_TOKEN", valueFrom = var.slack_bot_token_ssm_arn }
     ]
 
     environment = [

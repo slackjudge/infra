@@ -177,3 +177,44 @@ variable "redis_password" {
   type        = string
   sensitive   = true
 }
+
+# =============================================================================
+# Secrets - JWT
+# =============================================================================
+variable "jwt_access_secret" {
+  description = "JWT Access Token secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "jwt_refresh_secret" {
+  description = "JWT Refresh Token secret"
+  type        = string
+  sensitive   = true
+}
+
+# =============================================================================
+# Secrets - Slack
+# =============================================================================
+variable "slack_client_id" {
+  description = "Slack OAuth client ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "slack_client_secret" {
+  description = "Slack OAuth client secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "slack_redirect_uri" {
+  description = "Slack OAuth redirect URI"
+  type        = string
+}
+
+variable "slack_bot_token" {
+  description = "Slack bot token"
+  type        = string
+  sensitive   = true
+}

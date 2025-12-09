@@ -93,6 +93,12 @@ module "ecs" {
   redis_username_ssm_arn    = aws_ssm_parameter.redis_username.arn
   redis_password_ssm_arn    = aws_ssm_parameter.redis_password.arn
   frontend_url_ssm_arn      = aws_ssm_parameter.frontend_url.arn
+  jwt_access_secret_ssm_arn   = aws_ssm_parameter.jwt_access_secret.arn
+  jwt_refresh_secret_ssm_arn  = aws_ssm_parameter.jwt_refresh_secret.arn
+  slack_client_id_ssm_arn     = aws_ssm_parameter.slack_client_id.arn
+  slack_client_secret_ssm_arn = aws_ssm_parameter.slack_client_secret.arn
+  slack_redirect_uri_ssm_arn  = aws_ssm_parameter.slack_redirect_uri.arn
+  slack_bot_token_ssm_arn     = aws_ssm_parameter.slack_bot_token.arn
 
   # Auto Scaling
   api_min_count       = var.api_min_count
@@ -190,4 +196,42 @@ resource "aws_ssm_parameter" "frontend_url" {
   name  = "/bj-ranking/prod/FRONTEND_URL"
   type  = "String"
   value = "https://${var.domain_name}"
+}
+
+# JWT
+resource "aws_ssm_parameter" "jwt_access_secret" {
+  name  = "/bj-ranking/prod/DEV_ACCESS_SECRET"
+  type  = "SecureString"
+  value = var.jwt_access_secret
+}
+
+resource "aws_ssm_parameter" "jwt_refresh_secret" {
+  name  = "/bj-ranking/prod/DEV_REFRESH_SECRET"
+  type  = "SecureString"
+  value = var.jwt_refresh_secret
+}
+
+# Slack
+resource "aws_ssm_parameter" "slack_client_id" {
+  name  = "/bj-ranking/prod/SLACK_CLIENT_ID"
+  type  = "SecureString"
+  value = var.slack_client_id
+}
+
+resource "aws_ssm_parameter" "slack_client_secret" {
+  name  = "/bj-ranking/prod/SLACK_CLIENT_SECRET"
+  type  = "SecureString"
+  value = var.slack_client_secret
+}
+
+resource "aws_ssm_parameter" "slack_redirect_uri" {
+  name  = "/bj-ranking/prod/SLACK_REDIRECT_URI"
+  type  = "String"
+  value = var.slack_redirect_uri
+}
+
+resource "aws_ssm_parameter" "slack_bot_token" {
+  name  = "/bj-ranking/prod/SLACK_BOT_TOKEN"
+  type  = "SecureString"
+  value = var.slack_bot_token
 }
