@@ -149,8 +149,8 @@ resource "aws_ecs_service" "api" {
   # Wait 120 seconds before starting health checks (Spring Boot startup ~90s)
   health_check_grace_period_seconds = 120
 
-  # Deployment configuration
-  deployment_minimum_healthy_percent = 0
+  # Deployment configuration (zero-downtime rolling update)
+  deployment_minimum_healthy_percent = 100
   deployment_maximum_percent         = 200
 
   # Circuit breaker: auto rollback on deployment failure
