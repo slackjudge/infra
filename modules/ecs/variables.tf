@@ -220,7 +220,7 @@ variable "app_port" {
 variable "worker_schedule" {
   description = "Worker cron schedule expression"
   type        = string
-  default     = "cron(0/30 * * * ? *)"
+  default     = "cron(0 * * * ? *)"
 }
 
 # Logging
