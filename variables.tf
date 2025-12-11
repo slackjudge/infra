@@ -79,6 +79,12 @@ variable "requests_per_target" {
   default     = 1000
 }
 
+variable "health_check_grace_period_seconds" {
+  description = "Seconds to wait before starting health checks (Spring Boot startup ~90s)"
+  type        = number
+  default     = 120
+}
+
 # =============================================================================
 # Cloudflare
 # =============================================================================

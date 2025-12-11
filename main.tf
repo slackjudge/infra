@@ -102,10 +102,11 @@ module "ecs" {
   slack_webhook_url_ssm_arn   = aws_ssm_parameter.slack_webhook_url.arn
 
   # Auto Scaling
-  api_min_count       = var.api_min_count
-  api_max_count       = var.api_max_count
-  cpu_target_value    = var.cpu_target_value
-  requests_per_target = var.requests_per_target
+  api_min_count                     = var.api_min_count
+  api_max_count                     = var.api_max_count
+  cpu_target_value                  = var.cpu_target_value
+  requests_per_target               = var.requests_per_target
+  health_check_grace_period_seconds = var.health_check_grace_period_seconds
 }
 
 # Cloudflare (Worker, DNS, Page Rules)
