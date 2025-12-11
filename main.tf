@@ -62,15 +62,15 @@ module "alb" {
 
 # ECS (Cluster, Tasks, Service, Auto Scaling, EventBridge)
 module "ecs" {
-  source                = "./modules/ecs"
-  project_name          = var.project_name
-  aws_region            = var.aws_region
-  subnet_ids            = module.networking.public_subnet_ids
-  ecs_security_group_id = module.security.ecs_security_group_id
-  execution_role_arn    = module.iam.ecs_execution_role_arn
-  eventbridge_role_arn  = module.iam.eventbridge_role_arn
-  target_group_arn      = module.alb.target_group_arn
-  alb_arn_suffix        = module.alb.alb_arn_suffix
+  source                  = "./modules/ecs"
+  project_name            = var.project_name
+  aws_region              = var.aws_region
+  subnet_ids              = module.networking.public_subnet_ids
+  ecs_security_group_id   = module.security.ecs_security_group_id
+  execution_role_arn      = module.iam.ecs_execution_role_arn
+  eventbridge_role_arn    = module.iam.eventbridge_role_arn
+  target_group_arn        = module.alb.target_group_arn
+  alb_arn_suffix          = module.alb.alb_arn_suffix
   target_group_arn_suffix = module.alb.target_group_arn_suffix
 
   # Container images (use ECR URLs)
@@ -81,24 +81,25 @@ module "ecs" {
   spring_profile = var.spring_profile
 
   # SSM Parameter ARNs
-  postgres_host_ssm_arn     = aws_ssm_parameter.postgres_host.arn
-  postgres_port_ssm_arn     = aws_ssm_parameter.postgres_port.arn
-  postgres_database_ssm_arn = aws_ssm_parameter.postgres_database.arn
-  postgres_user_ssm_arn     = aws_ssm_parameter.postgres_user.arn
-  postgres_password_ssm_arn = aws_ssm_parameter.postgres_password.arn
-  mongo_uri_ssm_arn         = aws_ssm_parameter.mongo_uri.arn
-  mongo_database_ssm_arn    = aws_ssm_parameter.mongo_database.arn
-  mongo_password_ssm_arn    = aws_ssm_parameter.mongo_password.arn
-  redis_endpoint_ssm_arn    = aws_ssm_parameter.redis_endpoint.arn
-  redis_username_ssm_arn    = aws_ssm_parameter.redis_username.arn
-  redis_password_ssm_arn    = aws_ssm_parameter.redis_password.arn
-  frontend_url_ssm_arn      = aws_ssm_parameter.frontend_url.arn
+  postgres_host_ssm_arn       = aws_ssm_parameter.postgres_host.arn
+  postgres_port_ssm_arn       = aws_ssm_parameter.postgres_port.arn
+  postgres_database_ssm_arn   = aws_ssm_parameter.postgres_database.arn
+  postgres_user_ssm_arn       = aws_ssm_parameter.postgres_user.arn
+  postgres_password_ssm_arn   = aws_ssm_parameter.postgres_password.arn
+  mongo_uri_ssm_arn           = aws_ssm_parameter.mongo_uri.arn
+  mongo_database_ssm_arn      = aws_ssm_parameter.mongo_database.arn
+  mongo_password_ssm_arn      = aws_ssm_parameter.mongo_password.arn
+  redis_endpoint_ssm_arn      = aws_ssm_parameter.redis_endpoint.arn
+  redis_username_ssm_arn      = aws_ssm_parameter.redis_username.arn
+  redis_password_ssm_arn      = aws_ssm_parameter.redis_password.arn
+  frontend_url_ssm_arn        = aws_ssm_parameter.frontend_url.arn
   jwt_access_secret_ssm_arn   = aws_ssm_parameter.jwt_access_secret.arn
   jwt_refresh_secret_ssm_arn  = aws_ssm_parameter.jwt_refresh_secret.arn
   slack_client_id_ssm_arn     = aws_ssm_parameter.slack_client_id.arn
   slack_client_secret_ssm_arn = aws_ssm_parameter.slack_client_secret.arn
   slack_redirect_uri_ssm_arn  = aws_ssm_parameter.slack_redirect_uri.arn
   slack_bot_token_ssm_arn     = aws_ssm_parameter.slack_bot_token.arn
+  slack_webhook_url_ssm_arn   = aws_ssm_parameter.slack_webhook_url.arn
 
   # Auto Scaling
   api_min_count       = var.api_min_count
@@ -234,4 +235,10 @@ resource "aws_ssm_parameter" "slack_bot_token" {
   name  = "/bj-ranking/prod/SLACK_BOT_TOKEN"
   type  = "SecureString"
   value = var.slack_bot_token
+}
+
+resource "aws_ssm_parameter" "slack_webhook_url" {
+  name  = "/bj-ranking/prod/SLACK_WEBHOOK_URL"
+  type  = "SecureString"
+  value = var.slack_webhook_url
 }

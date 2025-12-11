@@ -218,3 +218,9 @@ variable "slack_bot_token" {
   type        = string
   sensitive   = true
 }
+
+variable "slack_webhook_url" {
+  description = "Slack webhook URL for notifications"
+  type        = string
+  sensitive   = true
+}

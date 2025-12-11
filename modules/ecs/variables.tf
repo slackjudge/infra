@@ -229,3 +229,7 @@ variable "log_retention_days" {
   type        = number
   default     = 7
 }
+variable "slack_webhook_url_ssm_arn" {
+  description = "SSM parameter ARN for SLACK_WEBHOOK_URL"
+  type        = string
+}
