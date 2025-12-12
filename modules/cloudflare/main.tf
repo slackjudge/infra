@@ -93,3 +93,21 @@ resource "cloudflare_zone_setting" "ssl" {
   setting_id = "ssl"
   value      = "flexible"
 }
+
+# Zone Settings - Rocket Loader OFF (localStorage 접근 문제 방지)
+resource "cloudflare_zone_setting" "rocket_loader" {
+  zone_id    = var.cloudflare_zone_id
+  setting_id = "rocket_loader"
+  value      = "off"
+}
+
+# Zone Settings - Auto Minify (JavaScript OFF - localStorage 접근 문제 방지)
+resource "cloudflare_zone_setting" "minify" {
+  zone_id    = var.cloudflare_zone_id
+  setting_id = "minify"
+  value = {
+    css  = "on"
+    html = "on"
+    js   = "off"
+  }
+}
