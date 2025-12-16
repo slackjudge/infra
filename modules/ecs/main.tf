@@ -118,8 +118,7 @@ resource "aws_ecs_task_definition" "worker" {
     ]
 
     environment = [
-      { name = "SPRING_PROFILES_ACTIVE", value = var.worker_spring_profile },
-      { name = "TZ", value = "Asia/Seoul" }
+      { name = "SPRING_PROFILES_ACTIVE", value = var.worker_spring_profile }
     ]
 
     logConfiguration = {
