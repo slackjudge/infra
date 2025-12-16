@@ -66,7 +66,7 @@ resource "aws_ecs_task_definition" "api" {
     ]
 
     environment = [
-      { name = "SPRING_PROFILES_ACTIVE", value = var.spring_profile }
+      { name = "SPRING_PROFILES_ACTIVE", value = var.api_spring_profile }
     ]
 
     logConfiguration = {
@@ -117,7 +117,7 @@ resource "aws_ecs_task_definition" "worker" {
     ]
 
     environment = [
-      { name = "SPRING_PROFILES_ACTIVE", value = var.spring_profile }
+      { name = "SPRING_PROFILES_ACTIVE", value = var.worker_spring_profile }
     ]
 
     logConfiguration = {

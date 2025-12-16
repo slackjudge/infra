@@ -37,10 +37,16 @@ variable "health_check_path" {
   default     = "/health"
 }
 
-variable "spring_profile" {
-  description = "Spring Boot active profile (dev, prod)"
+variable "api_spring_profile" {
+  description = "Spring Boot active profile for API (dev, prod)"
   type        = string
   default     = "dev"
+}
+
+variable "worker_spring_profile" {
+  description = "Spring Boot active profile for Worker (dev, prod)"
+  type        = string
+  default     = "prod"
 }
 
 # =============================================================================

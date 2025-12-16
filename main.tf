@@ -78,7 +78,8 @@ module "ecs" {
   worker_image = "${module.ecr.worker_repository_url}:latest"
 
   # Spring Profile
-  spring_profile = var.spring_profile
+  api_spring_profile    = var.api_spring_profile
+  worker_spring_profile = var.worker_spring_profile
 
   # SSM Parameter ARNs
   postgres_host_ssm_arn       = aws_ssm_parameter.postgres_host.arn
