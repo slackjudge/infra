@@ -246,6 +246,23 @@ resource "aws_cloudwatch_event_target" "worker" {
   arn       = aws_ecs_cluster.main.arn
   role_arn  = var.eventbridge_role_arn
 
+  # Pass scheduled time to container as command argument
+  input_transformer {
+    input_paths = {
+      scheduled_time = "$.time"
+    }
+    input_template = <<-EOF
+      {
+        "containerOverrides": [
+          {
+            "name": "worker-container",
+            "command": ["<scheduled_time>"]
+          }
+        ]
+      }
+    EOF
+  }
+
   ecs_target {
     task_count          = 1
     task_definition_arn = aws_ecs_task_definition.worker.arn
