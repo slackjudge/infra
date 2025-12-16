@@ -101,6 +101,11 @@ variable "mongo_database_ssm_arn" {
   type        = string
 }
 
+variable "mongo_user_name_ssm_arn" {
+  description = "SSM parameter ARN for MONGO_USER_NAME"
+  type        = string
+}
+
 variable "mongo_password_ssm_arn" {
   description = "SSM parameter ARN for MONGO_PASSWORD"
   type        = string

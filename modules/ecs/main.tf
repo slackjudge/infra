@@ -101,20 +101,17 @@ resource "aws_ecs_task_definition" "worker" {
     essential = true
 
     secrets = [
+      # MongoDB
+      { name = "MONGO_URI", valueFrom = var.mongo_uri_ssm_arn },
+      { name = "MONGO_DATABASE", valueFrom = var.mongo_database_ssm_arn },
+      { name = "MONGO_USER_NAME", valueFrom = var.mongo_user_name_ssm_arn },
+      { name = "MONGO_PASSWORD", valueFrom = var.mongo_password_ssm_arn },
       # PostgreSQL
       { name = "POSTGRES_HOST", valueFrom = var.postgres_host_ssm_arn },
       { name = "POSTGRES_PORT", valueFrom = var.postgres_port_ssm_arn },
       { name = "POSTGRES_DATABASE", valueFrom = var.postgres_database_ssm_arn },
       { name = "POSTGRES_USER", valueFrom = var.postgres_user_ssm_arn },
       { name = "POSTGRES_PASSWORD", valueFrom = var.postgres_password_ssm_arn },
-      # MongoDB
-      { name = "MONGO_URI", valueFrom = var.mongo_uri_ssm_arn },
-      { name = "MONGO_DATABASE", valueFrom = var.mongo_database_ssm_arn },
-      { name = "MONGO_PASSWORD", valueFrom = var.mongo_password_ssm_arn },
-      # Redis
-      { name = "REDIS_ENDPOINT", valueFrom = var.redis_endpoint_ssm_arn },
-      { name = "REDIS_USERNAME", valueFrom = var.redis_username_ssm_arn },
-      { name = "REDIS_PASSWORD", valueFrom = var.redis_password_ssm_arn },
       # Slack
       { name = "SLACK_WEBHOOK_URL", valueFrom = var.slack_webhook_url_ssm_arn }
     ]

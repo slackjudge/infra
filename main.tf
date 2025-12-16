@@ -88,6 +88,7 @@ module "ecs" {
   postgres_password_ssm_arn   = aws_ssm_parameter.postgres_password.arn
   mongo_uri_ssm_arn           = aws_ssm_parameter.mongo_uri.arn
   mongo_database_ssm_arn      = aws_ssm_parameter.mongo_database.arn
+  mongo_user_name_ssm_arn     = aws_ssm_parameter.mongo_user_name.arn
   mongo_password_ssm_arn      = aws_ssm_parameter.mongo_password.arn
   redis_endpoint_ssm_arn      = aws_ssm_parameter.redis_endpoint.arn
   redis_username_ssm_arn      = aws_ssm_parameter.redis_username.arn
@@ -166,6 +167,12 @@ resource "aws_ssm_parameter" "mongo_database" {
   name  = "/bj-ranking/prod/MONGO_DATABASE"
   type  = "String"
   value = var.mongo_database
+}
+
+resource "aws_ssm_parameter" "mongo_user_name" {
+  name  = "/bj-ranking/prod/MONGO_USER_NAME"
+  type  = "SecureString"
+  value = var.mongo_user_name
 }
 
 resource "aws_ssm_parameter" "mongo_password" {

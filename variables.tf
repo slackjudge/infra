@@ -157,6 +157,12 @@ variable "mongo_database" {
   default     = "mini2"
 }
 
+variable "mongo_user_name" {
+  description = "MongoDB username"
+  type        = string
+  sensitive   = true
+}
+
 variable "mongo_password" {
   description = "MongoDB password"
   type        = string
