@@ -49,6 +49,12 @@ variable "worker_spring_profile" {
   default     = "prod"
 }
 
+variable "loki_uri" {
+  description = "Loki server URI (hostname or IP)"
+  type        = string
+  default     = "localhost"
+}
+
 # =============================================================================
 # ECR
 # =============================================================================

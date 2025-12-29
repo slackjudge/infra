@@ -102,6 +102,7 @@ module "ecs" {
   slack_redirect_uri_ssm_arn  = aws_ssm_parameter.slack_redirect_uri.arn
   slack_bot_token_ssm_arn     = aws_ssm_parameter.slack_bot_token.arn
   slack_webhook_url_ssm_arn   = aws_ssm_parameter.slack_webhook_url.arn
+  loki_uri_ssm_arn            = aws_ssm_parameter.loki_uri.arn
 
   # Auto Scaling
   api_min_count                     = var.api_min_count
@@ -250,4 +251,11 @@ resource "aws_ssm_parameter" "slack_webhook_url" {
   name  = "/bj-ranking/prod/SLACK_WEBHOOK_URL"
   type  = "SecureString"
   value = var.slack_webhook_url
+}
+
+# Loki
+resource "aws_ssm_parameter" "loki_uri" {
+  name  = "/bj-ranking/prod/LOKI_URI"
+  type  = "String"
+  value = var.loki_uri
 }

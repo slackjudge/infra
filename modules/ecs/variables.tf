@@ -70,6 +70,12 @@ variable "worker_spring_profile" {
   default     = "prod"
 }
 
+# SSM Parameter ARNs - loki
+variable "loki_uri_ssm_arn" {
+  description = "SSM parameter ARN for LOKI_URI"
+  type        = string
+}
+
 # SSM Parameter ARNs - PostgreSQL
 variable "postgres_host_ssm_arn" {
   description = "SSM parameter ARN for POSTGRES_HOST"

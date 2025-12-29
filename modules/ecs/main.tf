@@ -62,7 +62,9 @@ resource "aws_ecs_task_definition" "api" {
       { name = "SLACK_CLIENT_ID", valueFrom = var.slack_client_id_ssm_arn },
       { name = "SLACK_CLIENT_SECRET", valueFrom = var.slack_client_secret_ssm_arn },
       { name = "SLACK_REDIRECT_URI", valueFrom = var.slack_redirect_uri_ssm_arn },
-      { name = "SLACK_BOT_TOKEN", valueFrom = var.slack_bot_token_ssm_arn }
+      { name = "SLACK_BOT_TOKEN", valueFrom = var.slack_bot_token_ssm_arn },
+      # Loki
+      { name = "LOKI_URI", valueFrom = var.loki_uri_ssm_arn }
     ]
 
     environment = [
