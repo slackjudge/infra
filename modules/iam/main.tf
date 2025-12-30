@@ -98,3 +98,45 @@ resource "aws_iam_role_policy_attachment" "eventbridge_ecs" {
   role       = aws_iam_role.eventbridge.name
   policy_arn = aws_iam_policy.eventbridge_ecs.arn
 }
+
+# -----------------------------------------------------------------------------
+# ECS Task Role (for application-level AWS API calls)
+# -----------------------------------------------------------------------------
+resource "aws_iam_role" "ecs_task" {
+  name = "${var.project_name}-ecs-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ecs-tasks.amazonaws.com"
+      }
+    }]
+  })
+
+  tags = {
+    Name = "${var.project_name}-ecs-task-role"
+  }
+}
+
+# EventBridge PutEvents policy for ECS Task
+resource "aws_iam_policy" "ecs_task_eventbridge" {
+  name        = "${var.project_name}-ecs-task-eventbridge"
+  description = "Allow ECS tasks to publish events to EventBridge"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "events:PutEvents"
+      Resource = "arn:aws:events:${var.aws_region}:*:event-bus/default"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_eventbridge" {
+  role       = aws_iam_role.ecs_task.name
+  policy_arn = aws_iam_policy.ecs_task_eventbridge.arn
+}

@@ -68,6 +68,7 @@ module "ecs" {
   subnet_ids              = module.networking.public_subnet_ids
   ecs_security_group_id   = module.security.ecs_security_group_id
   execution_role_arn      = module.iam.ecs_execution_role_arn
+  task_role_arn           = module.iam.ecs_task_role_arn
   eventbridge_role_arn    = module.iam.eventbridge_role_arn
   target_group_arn        = module.alb.target_group_arn
   alb_arn_suffix          = module.alb.alb_arn_suffix

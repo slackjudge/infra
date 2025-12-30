@@ -30,6 +30,11 @@ variable "eventbridge_role_arn" {
   type        = string
 }
 
+variable "task_role_arn" {
+  description = "ECS task role ARN for application-level AWS API calls (e.g., EventBridge PutEvents)"
+  type        = string
+}
+
 # ALB
 variable "target_group_arn" {
   description = "ALB target group ARN"
