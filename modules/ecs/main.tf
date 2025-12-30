@@ -278,3 +278,59 @@ resource "aws_cloudwatch_event_target" "worker" {
     }
   }
 }
+
+# -----------------------------------------------------------------------------
+# EventBridge Rule for Batch Finished Event (Logging)
+# -----------------------------------------------------------------------------
+
+# CloudWatch Log Group for Batch Events
+resource "aws_cloudwatch_log_group" "batch_events" {
+  name              = "/aws/events/${var.project_name}-batch"
+  retention_in_days = var.log_retention_days
+
+  tags = {
+    Name = "${var.project_name}-batch-events-logs"
+  }
+}
+
+# EventBridge Rule - Batch Finished Event Pattern
+resource "aws_cloudwatch_event_rule" "batch_finished" {
+  name        = "${var.project_name}-batch-finished"
+  description = "Capture Batch Finished events from slackJudge application"
+
+  event_pattern = jsonencode({
+    source      = ["com.slackJudge.batch"]
+    detail-type = ["Batch Finished"]
+  })
+
+  tags = {
+    Name = "${var.project_name}-batch-finished"
+  }
+}
+
+# CloudWatch Logs Resource Policy for EventBridge
+resource "aws_cloudwatch_log_resource_policy" "batch_events" {
+  policy_name = "${var.project_name}-batch-events-policy"
+
+  policy_document = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "events.amazonaws.com"
+      }
+      Action = [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ]
+      Resource = "${aws_cloudwatch_log_group.batch_events.arn}:*"
+    }]
+  })
+}
+
+# EventBridge Target - CloudWatch Logs
+resource "aws_cloudwatch_event_target" "batch_finished_logs" {
+  rule      = aws_cloudwatch_event_rule.batch_finished.name
+  target_id = "${var.project_name}-batch-finished-logs"
+  arn       = aws_cloudwatch_log_group.batch_events.arn
+}
