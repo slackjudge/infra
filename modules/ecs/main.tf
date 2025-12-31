@@ -156,6 +156,12 @@ resource "aws_ecs_task_definition" "api" {
   requires_compatibilities = ["EC2"]
   execution_role_arn       = var.execution_role_arn
 
+  # Mount host directory for Spring Boot file logs
+  volume {
+    name      = "app-logs"
+    host_path = "/var/log/slackjudge"
+  }
+
   container_definitions = jsonencode([{
     name      = "api-container"
     image     = var.api_image
@@ -211,6 +217,13 @@ resource "aws_ecs_task_definition" "api" {
         "max-file" = "5"
       }
     }
+
+    # Mount point for file-based logs (Spring Boot writes to /app/logs)
+    mountPoints = [{
+      sourceVolume  = "app-logs"
+      containerPath = "/app/logs"
+      readOnly      = false
+    }]
   }])
 
   tags = {
@@ -499,6 +512,12 @@ resource "aws_ecs_task_definition" "promtail" {
     host_path = "/var/lib/docker/containers"
   }
 
+  # Mount Spring Boot application logs directory
+  volume {
+    name      = "app-logs"
+    host_path = "/var/log/slackjudge"
+  }
+
   container_definitions = jsonencode([{
     name      = "promtail"
     image     = var.promtail_image
@@ -519,6 +538,11 @@ resource "aws_ecs_task_definition" "promtail" {
       {
         sourceVolume  = "containers"
         containerPath = "/var/lib/docker/containers"
+        readOnly      = true
+      },
+      {
+        sourceVolume  = "app-logs"
+        containerPath = "/var/log/slackjudge"
         readOnly      = true
       }
     ]
