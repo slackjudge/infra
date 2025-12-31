@@ -261,3 +261,45 @@ variable "slack_webhook_url_ssm_arn" {
   description = "SSM parameter ARN for SLACK_WEBHOOK_URL"
   type        = string
 }
+
+# -----------------------------------------------------------------------------
+# EC2 Configuration (for API service)
+# -----------------------------------------------------------------------------
+variable "ecs_instance_profile_name" {
+  description = "ECS EC2 instance profile name"
+  type        = string
+}
+
+variable "ec2_instance_type" {
+  description = "EC2 instance type for ECS cluster"
+  type        = string
+  default     = "t3.small"
+}
+
+variable "ec2_min_count" {
+  description = "Minimum number of EC2 instances"
+  type        = number
+  default     = 1
+}
+
+variable "ec2_max_count" {
+  description = "Maximum number of EC2 instances"
+  type        = number
+  default     = 2
+}
+
+variable "ec2_desired_count" {
+  description = "Desired number of EC2 instances"
+  type        = number
+  default     = 1
+}
+
+variable "loki_url" {
+  description = "Loki push URL for Promtail (e.g., http://loki:3100)"
+  type        = string
+}
+
+variable "promtail_image" {
+  description = "Promtail container image URL"
+  type        = string
+}

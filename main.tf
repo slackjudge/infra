@@ -75,12 +75,21 @@ module "ecs" {
   target_group_arn_suffix = module.alb.target_group_arn_suffix
 
   # Container images (use ECR URLs)
-  api_image    = "${module.ecr.api_repository_url}:latest"
-  worker_image = "${module.ecr.worker_repository_url}:latest"
+  api_image      = "${module.ecr.api_repository_url}:latest"
+  worker_image   = "${module.ecr.worker_repository_url}:latest"
+  promtail_image = "${module.ecr.promtail_repository_url}:latest"
 
   # Spring Profile
   api_spring_profile    = var.api_spring_profile
   worker_spring_profile = var.worker_spring_profile
+
+  # EC2 Configuration (for API service)
+  ecs_instance_profile_name = module.iam.ecs_instance_profile_name
+  ec2_instance_type         = var.ec2_instance_type
+  ec2_min_count             = var.ec2_min_count
+  ec2_max_count             = var.ec2_max_count
+  ec2_desired_count         = var.ec2_desired_count
+  loki_url                  = var.loki_url
 
   # SSM Parameter ARNs
   postgres_host_ssm_arn       = aws_ssm_parameter.postgres_host.arn

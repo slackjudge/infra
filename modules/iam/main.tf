@@ -143,3 +143,47 @@ resource "aws_iam_role_policy_attachment" "ecs_task_eventbridge" {
   role       = aws_iam_role.ecs_task.name
   policy_arn = aws_iam_policy.ecs_task_eventbridge.arn
 }
+
+# -----------------------------------------------------------------------------
+# EC2 Instance Role (for ECS EC2 launch type)
+# -----------------------------------------------------------------------------
+resource "aws_iam_role" "ecs_instance" {
+  name = "${var.project_name}-ecs-instance-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+    }]
+  })
+
+  tags = {
+    Name = "${var.project_name}-ecs-instance-role"
+  }
+}
+
+# Attach AWS managed ECS EC2 Container Service policy
+resource "aws_iam_role_policy_attachment" "ecs_instance_ecs" {
+  role       = aws_iam_role.ecs_instance.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+}
+
+# Attach SSM Managed Instance Core for Session Manager access
+resource "aws_iam_role_policy_attachment" "ecs_instance_ssm" {
+  role       = aws_iam_role.ecs_instance.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# EC2 Instance Profile
+resource "aws_iam_instance_profile" "ecs_instance" {
+  name = "${var.project_name}-ecs-instance-profile"
+  role = aws_iam_role.ecs_instance.name
+
+  tags = {
+    Name = "${var.project_name}-ecs-instance-profile"
+  }
+}

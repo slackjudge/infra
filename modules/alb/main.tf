@@ -11,13 +11,13 @@ resource "aws_lb" "main" {
   }
 }
 
-# Target Group for API
+# Target Group for API (EC2 instances with bridge network mode)
 resource "aws_lb_target_group" "api" {
   name        = "${var.project_name}-api-tg"
   port        = var.app_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
-  target_type = "ip"
+  target_type = "instance"
 
   health_check {
     enabled             = true

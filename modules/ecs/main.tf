@@ -2,8 +2,138 @@
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
 
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+
   tags = {
     Name = "${var.project_name}-cluster"
+  }
+}
+
+# -----------------------------------------------------------------------------
+# EC2 Infrastructure (for API service)
+# -----------------------------------------------------------------------------
+
+# Latest ECS-optimized Amazon Linux 2 AMI
+data "aws_ssm_parameter" "ecs_ami" {
+  name = "/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id"
+}
+
+# Launch Template for ECS EC2 instances
+resource "aws_launch_template" "ecs" {
+  name_prefix   = "${var.project_name}-ecs-"
+  image_id      = data.aws_ssm_parameter.ecs_ami.value
+  instance_type = var.ec2_instance_type
+
+  iam_instance_profile {
+    name = var.ecs_instance_profile_name
+  }
+
+  network_interfaces {
+    associate_public_ip_address = true
+    security_groups             = [var.ecs_security_group_id]
+  }
+
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    echo "ECS_CLUSTER=${aws_ecs_cluster.main.name}" >> /etc/ecs/ecs.config
+    echo "ECS_ENABLE_CONTAINER_METADATA=true" >> /etc/ecs/ecs.config
+  EOF
+  )
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name = "${var.project_name}-ecs-instance"
+    }
+  }
+
+  tags = {
+    Name = "${var.project_name}-launch-template"
+  }
+}
+
+# Auto Scaling Group for ECS EC2 instances
+resource "aws_autoscaling_group" "ecs" {
+  name                = "${var.project_name}-ecs-asg"
+  vpc_zone_identifier = var.subnet_ids
+  min_size            = var.ec2_min_count
+  max_size            = var.ec2_max_count
+  desired_capacity    = var.ec2_desired_count
+
+  # Mixed instances policy: On-Demand base + Spot for additional capacity
+  mixed_instances_policy {
+    launch_template {
+      launch_template_specification {
+        launch_template_id = aws_launch_template.ecs.id
+        version            = "$Latest"
+      }
+
+      override {
+        instance_type = "t3.small"
+      }
+      override {
+        instance_type = "t3.micro"
+      }
+    }
+
+    instances_distribution {
+      on_demand_base_capacity                  = 1  # Always 1 On-Demand
+      on_demand_percentage_above_base_capacity = 0  # Rest are Spot
+      spot_allocation_strategy                 = "lowest-price"
+    }
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "${var.project_name}-ecs-instance"
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "AmazonECSManaged"
+    value               = "true"
+    propagate_at_launch = true
+  }
+
+  lifecycle {
+    ignore_changes = [desired_capacity]
+  }
+}
+
+# Capacity Provider
+resource "aws_ecs_capacity_provider" "main" {
+  name = "${var.project_name}-cp"
+
+  auto_scaling_group_provider {
+    auto_scaling_group_arn         = aws_autoscaling_group.ecs.arn
+    managed_termination_protection = "DISABLED"
+
+    managed_scaling {
+      maximum_scaling_step_size = 2
+      minimum_scaling_step_size = 1
+      status                    = "ENABLED"
+      target_capacity           = 100
+    }
+  }
+
+  tags = {
+    Name = "${var.project_name}-capacity-provider"
+  }
+}
+
+# Associate Capacity Provider with Cluster
+resource "aws_ecs_cluster_capacity_providers" "main" {
+  cluster_name = aws_ecs_cluster.main.name
+
+  capacity_providers = [aws_ecs_capacity_provider.main.name]
+
+  default_capacity_provider_strategy {
+    base              = 1
+    weight            = 100
+    capacity_provider = aws_ecs_capacity_provider.main.name
   }
 }
 
@@ -18,24 +148,25 @@ resource "aws_cloudwatch_log_group" "ecs" {
 }
 
 # -----------------------------------------------------------------------------
-# API Task Definition (Always-on Service)
+# API Task Definition (EC2 launch type with bridge network mode)
 # -----------------------------------------------------------------------------
 resource "aws_ecs_task_definition" "api" {
   family                   = "${var.project_name}-api"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = var.api_cpu
-  memory                   = var.api_memory
+  network_mode             = "bridge"
+  requires_compatibilities = ["EC2"]
   execution_role_arn       = var.execution_role_arn
 
   container_definitions = jsonencode([{
     name      = "api-container"
     image     = var.api_image
     essential = true
+    cpu       = var.api_cpu
+    memory    = var.api_memory
 
     portMappings = [{
       containerPort = var.app_port
-      hostPort      = var.app_port
+      hostPort      = 0  # Dynamic port mapping for bridge mode
+      protocol      = "tcp"
     }]
 
     secrets = [
@@ -72,12 +203,12 @@ resource "aws_ecs_task_definition" "api" {
       { name = "TZ", value = "Asia/Seoul" }
     ]
 
+    # Use json-file driver for Promtail to collect logs
     logConfiguration = {
-      logDriver = "awslogs"
+      logDriver = "json-file"
       options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.ecs.name
-        "awslogs-region"        = var.aws_region
-        "awslogs-stream-prefix" = "api"
+        "max-size" = "100m"
+        "max-file" = "5"
       }
     }
   }])
@@ -140,20 +271,26 @@ resource "aws_ecs_task_definition" "worker" {
 }
 
 # -----------------------------------------------------------------------------
-# ECS Service (API - Always-on)
+# ECS Service (API - Always-on, EC2 launch type)
 # -----------------------------------------------------------------------------
 resource "aws_ecs_service" "api" {
   name            = "${var.project_name}-api-svc"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.api.arn
   desired_count   = var.api_min_count
-  launch_type     = "FARGATE"
+
+  # Use Capacity Provider instead of launch_type
+  capacity_provider_strategy {
+    capacity_provider = aws_ecs_capacity_provider.main.name
+    weight            = 100
+    base              = 1
+  }
 
   # Wait before starting health checks (Spring Boot startup ~90s)
   health_check_grace_period_seconds = var.health_check_grace_period_seconds
 
-  # Deployment configuration (zero-downtime rolling update)
-  deployment_minimum_healthy_percent = 100
+  # Deployment configuration (EC2 can be more flexible)
+  deployment_minimum_healthy_percent = 50
   deployment_maximum_percent         = 200
 
   # Circuit breaker: auto rollback on deployment failure
@@ -162,16 +299,18 @@ resource "aws_ecs_service" "api" {
     rollback = true
   }
 
-  network_configuration {
-    subnets          = var.subnet_ids
-    security_groups  = [var.ecs_security_group_id]
-    assign_public_ip = true # Required for public subnet (no NAT Gateway)
-  }
+  # No network_configuration for bridge mode
 
   load_balancer {
     target_group_arn = var.target_group_arn
     container_name   = "api-container"
     container_port   = var.app_port
+  }
+
+  # Spread tasks across AZs
+  ordered_placement_strategy {
+    type  = "spread"
+    field = "attribute:ecs.availability-zone"
   }
 
   lifecycle {
@@ -181,6 +320,8 @@ resource "aws_ecs_service" "api" {
   tags = {
     Name = "${var.project_name}-api-svc"
   }
+
+  depends_on = [aws_ecs_cluster_capacity_providers.main]
 }
 
 # -----------------------------------------------------------------------------
@@ -334,4 +475,90 @@ resource "aws_cloudwatch_event_target" "batch_finished_logs" {
   rule      = aws_cloudwatch_event_rule.batch_finished.name
   target_id = "${var.project_name}-batch-finished-logs"
   arn       = aws_cloudwatch_log_group.batch_events.arn
+}
+
+# -----------------------------------------------------------------------------
+# Promtail Daemon Service (Log collection for Loki)
+# -----------------------------------------------------------------------------
+
+# Promtail Task Definition
+resource "aws_ecs_task_definition" "promtail" {
+  family                   = "${var.project_name}-promtail"
+  network_mode             = "bridge"
+  requires_compatibilities = ["EC2"]
+  execution_role_arn       = var.execution_role_arn
+
+  # Mount Docker socket and container logs directory
+  volume {
+    name      = "docker-sock"
+    host_path = "/var/run/docker.sock"
+  }
+
+  volume {
+    name      = "containers"
+    host_path = "/var/lib/docker/containers"
+  }
+
+  container_definitions = jsonencode([{
+    name      = "promtail"
+    image     = var.promtail_image
+    essential = true
+    cpu       = 128
+    memory    = 256
+
+    environment = [
+      { name = "LOKI_URL", value = var.loki_url }
+    ]
+
+    mountPoints = [
+      {
+        sourceVolume  = "docker-sock"
+        containerPath = "/var/run/docker.sock"
+        readOnly      = true
+      },
+      {
+        sourceVolume  = "containers"
+        containerPath = "/var/lib/docker/containers"
+        readOnly      = true
+      }
+    ]
+
+    # Promtail logs go to CloudWatch for debugging
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.ecs.name
+        "awslogs-region"        = var.aws_region
+        "awslogs-stream-prefix" = "promtail"
+      }
+    }
+  }])
+
+  tags = {
+    Name = "${var.project_name}-promtail"
+  }
+}
+
+# Promtail Daemon Service (runs on every EC2 instance)
+resource "aws_ecs_service" "promtail" {
+  name                = "${var.project_name}-promtail-daemon"
+  cluster             = aws_ecs_cluster.main.id
+  task_definition     = aws_ecs_task_definition.promtail.arn
+  scheduling_strategy = "DAEMON"
+
+  # Use Capacity Provider
+  capacity_provider_strategy {
+    capacity_provider = aws_ecs_capacity_provider.main.name
+    weight            = 100
+    base              = 0
+  }
+
+  deployment_minimum_healthy_percent = 0
+  deployment_maximum_percent         = 100
+
+  tags = {
+    Name = "${var.project_name}-promtail-daemon"
+  }
+
+  depends_on = [aws_ecs_cluster_capacity_providers.main]
 }

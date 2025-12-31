@@ -248,3 +248,35 @@ variable "slack_webhook_url" {
   type        = string
   sensitive   = true
 }
+
+# =============================================================================
+# EC2 Configuration (for ECS EC2 launch type)
+# =============================================================================
+variable "ec2_instance_type" {
+  description = "EC2 instance type for ECS cluster"
+  type        = string
+  default     = "t3.small"
+}
+
+variable "ec2_min_count" {
+  description = "Minimum number of EC2 instances"
+  type        = number
+  default     = 1
+}
+
+variable "ec2_max_count" {
+  description = "Maximum number of EC2 instances"
+  type        = number
+  default     = 2
+}
+
+variable "ec2_desired_count" {
+  description = "Desired number of EC2 instances"
+  type        = number
+  default     = 1
+}
+
+variable "loki_url" {
+  description = "Loki push URL for Promtail (e.g., http://loki:3100)"
+  type        = string
+}

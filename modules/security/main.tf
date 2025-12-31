@@ -27,18 +27,18 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# ECS Security Group
+# ECS Security Group (for EC2 instances running ECS tasks)
 resource "aws_security_group" "ecs" {
   name        = "${var.project_name}-ecs-sg"
-  description = "Security group for ECS tasks"
+  description = "Security group for ECS EC2 instances"
   vpc_id      = var.vpc_id
 
-  # Inbound: App port from ALB only
+  # Inbound: Dynamic port range from ALB (bridge mode uses ephemeral ports)
   ingress {
-    description     = "App port from ALB"
+    description     = "Dynamic ports from ALB (bridge mode)"
     protocol        = "tcp"
-    from_port       = var.app_port
-    to_port         = var.app_port
+    from_port       = 32768
+    to_port         = 65535
     security_groups = [aws_security_group.alb.id]
   }
 

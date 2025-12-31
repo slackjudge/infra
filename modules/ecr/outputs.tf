@@ -17,3 +17,13 @@ output "worker_repository_arn" {
   description = "Worker ECR repository ARN"
   value       = aws_ecr_repository.worker.arn
 }
+
+output "promtail_repository_url" {
+  description = "Promtail ECR repository URL"
+  value       = aws_ecr_repository.promtail.repository_url
+}
+
+output "promtail_repository_arn" {
+  description = "Promtail ECR repository ARN"
+  value       = aws_ecr_repository.promtail.arn
+}
