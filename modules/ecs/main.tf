@@ -546,12 +546,8 @@ resource "aws_ecs_service" "promtail" {
   task_definition     = aws_ecs_task_definition.promtail.arn
   scheduling_strategy = "DAEMON"
 
-  # Use Capacity Provider
-  capacity_provider_strategy {
-    capacity_provider = aws_ecs_capacity_provider.main.name
-    weight            = 100
-    base              = 0
-  }
+  # DAEMON services don't support capacity_provider_strategy
+  # They automatically run on all container instances
 
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100

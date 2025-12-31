@@ -13,7 +13,7 @@ resource "aws_lb" "main" {
 
 # Target Group for API (EC2 instances with bridge network mode)
 resource "aws_lb_target_group" "api" {
-  name        = "${var.project_name}-api-tg"
+  name_prefix = "api-"  # Use prefix to allow create_before_destroy
   port        = var.app_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -31,6 +31,10 @@ resource "aws_lb_target_group" "api" {
 
   tags = {
     Name = "${var.project_name}-api-tg"
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
