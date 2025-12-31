@@ -276,7 +276,8 @@ variable "ec2_desired_count" {
   default     = 1
 }
 
-variable "loki_url" {
-  description = "Loki push URL for Promtail (e.g., http://loki:3100)"
-  type        = string
+variable "loki_port" {
+  description = "Loki server port for Promtail"
+  type        = number
+  default     = 3100
 }

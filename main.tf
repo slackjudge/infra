@@ -89,7 +89,7 @@ module "ecs" {
   ec2_min_count             = var.ec2_min_count
   ec2_max_count             = var.ec2_max_count
   ec2_desired_count         = var.ec2_desired_count
-  loki_url                  = var.loki_url
+  loki_url                  = "http://${var.loki_uri}:${var.loki_port}"
 
   # SSM Parameter ARNs
   postgres_host_ssm_arn       = aws_ssm_parameter.postgres_host.arn
