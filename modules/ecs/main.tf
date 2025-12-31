@@ -545,9 +545,7 @@ resource "aws_ecs_service" "promtail" {
   cluster             = aws_ecs_cluster.main.id
   task_definition     = aws_ecs_task_definition.promtail.arn
   scheduling_strategy = "DAEMON"
-
-  # DAEMON services don't support capacity_provider_strategy
-  # They automatically run on all container instances
+  launch_type         = "EC2"  # DAEMON requires explicit launch_type, not capacity_provider_strategy
 
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100
